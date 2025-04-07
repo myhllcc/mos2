@@ -3,10 +3,6 @@ from scipy.constants import e as e
 from scipy.constants import hbar as hbar
 from scipy.constants import k as kb
 
-kb_mev = kb / (1e-3 * e)
-a = 3.14 # in A
-
-
 def compare_phonon_number(T):
     energy = np.arange(0.1, 20, 0.1)  # avoid division by zero
     
@@ -46,7 +42,7 @@ def compare_phonon_number(T):
     plt.legend()
     plt.show()
 
-def plot_lattice(nx_number, ny_number, a1, a2, delta_1, delta_2):
+def plot_real_space(nx_number, ny_number, a1, a2, delta_1, delta_2):
     for nx_i in np.arange(-int(nx_number / 2),int(nx_number / 2),1) :
         for ny_i in np.arange(-int(ny_number / 2),int(ny_number / 2),1):
             point1 = a1 * nx_i + a2 * ny_i + delta_1
@@ -57,13 +53,28 @@ def plot_lattice(nx_number, ny_number, a1, a2, delta_1, delta_2):
     plt.grid(True)
     plt.show()
 
+def plot_reciprocal_space(a, nx_number, ny_number, b1, b2):
+    delta_k1 = 2 * np.pi / (nx_number * a)
+    delta_k2 = 2 * np.pi / (ny_number * a)
+    for nx_i in np.arange(-int(nx_number / 2), int(nx_number / 2), 1):
+        for ny_i in np.arange(-int(nx_number / 2), int(ny_number / 2), 1):
+            point = b1 * nx_i + b2 * ny_i
+            plt.scatter(point[0], point[1], c='blue', s = 1)
+            for nx_sub_i in np.arange(0, nx_number, 1):
+                for ny_sub_i in np.arange(0, ny_number, 1):
+                    point_sub = b1 * nx_i + b2 * ny_i +  
+
+    plt.axis('equal')
+    plt.grid(True)
+    plt.show() 
 
 
 
 
 
 
-
+kb_mev = kb / (1e-3 * e)
+a = 3.14 # in A
 nx_number = 10
 ny_number = 10
 a1 = a * np.array([0.5,np.sqrt(3) / 2])
@@ -75,3 +86,5 @@ b1 = 2 * np.sqrt(3) / (3 * a) * np.array([np.sqrt(3) / 2, 1 / 2]) * 2 * np.pi
 b2 = 2 * np.sqrt(3) / (3 * a) * np.array([np.sqrt(3) / 2, - 1 / 2]) * 2 * np.pi
 
 print(times(a1, b1), times(a1, b2), times(a2, b1), times(a2, b2))
+plot_real_space(nx_number, ny_number, a1, a2, delta_1, delta_2)
+plot_reciprocal_space(a,nx_number, ny_number, b1, b2)

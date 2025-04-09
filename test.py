@@ -187,7 +187,7 @@ K = np.array([4 * np.pi / (3 * a),0])
 #plot_reciprocal_space(a,nx_number, ny_number, b1, b2)
 #plot_band_near_k_1d(nx_number,ny_number,b1,b2,K)
 energy_max = 1.1 #ev
-ef = 1
+ef = 0.9
 qm = np.sqrt(2 * m_eff_c * (energy_max-energy_shift) / energy_norm) / hbar# in A
 #plot_band_near_k_2d(nx_number, ny_number, b1, b2, energy_max)
 #calculate_total_number_electron(nx_number, ny_number, b1, b2, energy_max)
@@ -208,7 +208,7 @@ tau_ph = hbar * rho * np.square(s) / (2 * np.pi * g * np.square(E_c) * kb * T)
 skew_part = 4 * np.pi * (kb * T / (rho * s**2)) * g * energy_average * e * tau_ph / hbar * e
 skew_part2 = 2 * energy_average * e / (E_c**2) * e
 E_c_square_test = (hbar * rho * s**2) / (2 * np.pi * g * kb * T * tau_ph) / e
-print(tau_ph)
+print('tau_ph is', tau_ph)
 print(skew_part)
-print(skew_part2)
+print('skew part is', skew_part2)
 print(E_c_square_test)

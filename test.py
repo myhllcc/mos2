@@ -148,7 +148,18 @@ def calculate_total_number_electron(nx_number, ny_number, b1, b2, qm):
     ax.view_init(elev=30, azim=135)  # Adjust view angles
     plt.show()
 
-    
+    f_dirac = 1 / (np.exp((energy_array - ef) / (kb_ev * T)) + 1)
+    plt.scatter(energy_array,f_dirac)
+    plt.show()
+    total_number = 0
+    energy_average = 0
+    for f_index, f_i in enumerate(f_dirac):
+        total_number += f_i
+        energy_average += f_i * energy_array[f_index]
+    energy_average = energy_average / total_number
+    print('total number', total_number)
+    print('average energy', energy_average)
+    return total_number, energy_average
 
 kb_mev = kb / (1e-3 * e)
 kb_ev = kb / (e)
@@ -156,7 +167,7 @@ m_eff_c = 0.43 * me
 energy_gap = 1.6
 energy_norm = 1e20 / e # J to ev  e[ev] = e_norm * e[J], also remember to use m in e[J] and A in e[ev]
 energy_shift = energy_gap / 2 # half of the band gap
-T = 100 #K
+T = 500 #K
 
 
 a = 3.14 # in A
@@ -176,16 +187,17 @@ K = np.array([4 * np.pi / (3 * a),0])
 #plot_reciprocal_space(a,nx_number, ny_number, b1, b2)
 #plot_band_near_k_1d(nx_number,ny_number,b1,b2,K)
 energy_max = 1.1 #ev
+ef = 1
 qm = np.sqrt(2 * m_eff_c * (energy_max-energy_shift) / energy_norm) / hbar# in A
 #plot_band_near_k_2d(nx_number, ny_number, b1, b2, energy_max)
 #calculate_total_number_electron(nx_number, ny_number, b1, b2, energy_max)
 print(times(a1, b1), times(a1, b2), times(a2, b1), times(a2, b2))
-calculate_total_number_electron(nx_number,ny_number,b1,b2,qm)
+total_number, energy_average = calculate_total_number_electron(nx_number,ny_number,b1,b2,qm)
 
 rho = 3.1 * 1e-7 #g/cm^2
 rho = rho * 1e-3 * 1e4
 
-s = 1070 #m/s
+s = 2200 #m/s
 
 E_c = 2.4 #ev
 E_c = E_c * e
@@ -193,6 +205,10 @@ E_c = E_c * e
 g = m_eff_c / (2 * np.pi * np.square(hbar))
 tau_ph = hbar * rho * np.square(s) / (2 * np.pi * g * np.square(E_c) * kb * T)
 
-skew_part = g * tau_ph * 1.1 * e * tau_ph / hbar
+skew_part = 4 * np.pi * (kb * T / (rho * s**2)) * g * energy_average * e * tau_ph / hbar * e
+skew_part2 = 2 * energy_average * e / (E_c**2) * e
+E_c_square_test = (hbar * rho * s**2) / (2 * np.pi * g * kb * T * tau_ph) / e
 print(tau_ph)
 print(skew_part)
+print(skew_part2)
+print(E_c_square_test)

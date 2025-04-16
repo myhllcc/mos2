@@ -235,12 +235,12 @@ m_eff_c = 0.48 * me
 energy_gap = 1.6
 energy_norm = 1e20 / e # J to ev  e[ev] = e_norm * e[J], also remember to use m in e[J] and A in e[ev]
 energy_shift = energy_gap / 2 # half of the band gap
-T = 300 #K
+T = 30 #K
 
 
 a = 3.16 # in A
-nx_number = 3 * 3 * 30
-ny_number = 3 * 3 * 30
+nx_number = 3 * 3 * 10
+ny_number = 3 * 3 * 10
 a1 = a * np.array([0.5,np.sqrt(3) / 2])
 a2 = a * np.array([0.5,-np.sqrt(3) / 2])
 area_unit_cell = np.abs(a1[0] * a2[1] - a2[0] * a1[1]) * 1e-20
@@ -265,7 +265,8 @@ qm = np.sqrt(2 * m_eff_c * (energy_max-energy_shift) / energy_norm) / hbar# in A
 
 print(times(a1, b1), times(a1, b2), times(a2, b1), times(a2, b2))
 total_number, energy_average = calculate_total_number_electron(nx_number,ny_number,b1,b2,qm)
-
+carrier_density = total_number / area_unit_cell
+print("carrier_density: ", carrier_density)
 rho = 3.1 * 1e-7 #g/cm^2
 rho = rho * 1e-3 * 1e4
 
@@ -284,5 +285,5 @@ print('tau_ph is', tau_ph)
 print(skew_part)
 print('skew part is', skew_part2)
 print(E_c_square_test)
-plot_transverse()
+#plot_transverse()
 #plot_f_dot()

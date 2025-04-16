@@ -134,23 +134,23 @@ def calculate_total_number_electron(nx_number, ny_number, b1, b2, qm):
     q_array = generate_sampling_near_k_2d(nx_number, ny_number, b1, b2, qm)
     q_x_array = q_array[0]
     q_y_array = q_array[1]
-    plt.scatter(q_array[0],q_array[1],s=1)
-    plt.axis('equal')
-    plt.grid()
-    plt.show()
+    #plt.scatter(q_array[0],q_array[1],s=1)
+    #plt.axis('equal')
+    #plt.grid()
+    #plt.show()
     
     q_square_array = q_x_array**2 + q_y_array**2
     energy_array = (hbar**2 * q_square_array) / (2 * m_eff_c)
     energy_array = energy_array * energy_norm + energy_shift
-    fig = plt.figure(figsize=(10,7))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(q_x_array, q_y_array, energy_array, c=energy_array, cmap='viridis', s=20)
-    ax.view_init(elev=30, azim=135)  # Adjust view angles
-    plt.show()
+    #fig = plt.figure(figsize=(10,7))
+    #ax = fig.add_subplot(111, projection='3d')
+    #ax.scatter(q_x_array, q_y_array, energy_array, c=energy_array, cmap='viridis', s=20)
+    #ax.view_init(elev=30, azim=135)  # Adjust view angles
+    #plt.show()
 
     f_dirac = 1 / (np.exp((energy_array - ef) / (kb_ev * T)) + 1)
-    plt.scatter(energy_array,f_dirac)
-    plt.show()
+    #plt.scatter(energy_array,f_dirac)
+    #plt.show()
     total_number = 0
     energy_average = 0
     for f_index, f_i in enumerate(f_dirac):
@@ -161,25 +161,51 @@ def calculate_total_number_electron(nx_number, ny_number, b1, b2, qm):
     print('average energy', energy_average)
     return total_number, energy_average
 
-def plot_transverse():
+def plot_transverse(T_array):
     q_array = generate_sampling_near_k_2d(nx_number, ny_number, b1, b2, qm)
     q_x_array = q_array[0]
     q_y_array = q_array[1]
     q_y_number = q_y_array.shape[0]
     print(q_y_number)
+    v_x = hbar**2 * q_x_array / m_eff_c
+    v_y = hbar**2 * q_y_array / m_eff_c
+    q_square_array = q_x_array**2 + q_y_array**2
+    energy_array = (hbar**2 * q_square_array) / (2 * m_eff_c)
+    energy_array = energy_array * energy_norm + energy_shift
+    sigma_t = 0
+    sigma_t_array = np.array([])
+    for t in T_array:
+        print(t)
+        for q_x in q_x_array:
+            for q_y in q_y_array:
+                energy_q = (hbar**2 * q_x**2 * q_y**2) / (2 * m_eff_c) + energy_shift
+                tau_ph_t = hbar * rho * np.square(s) / (2 * np.pi * g * np.square(E_c) * kb * t)
+                f_dirac_q = 1 / (np.exp((energy_q - ef) / (kb_ev * t)) + 1)
+                f_dirac_q_dot = f_dirac_q * np.exp((energy_q - ef) / (kb_ev * t)) / (kb_ev * t)
+                v_x_q = hbar * q_x * 1e10 / m_eff_c
+                sigma_t += v_x_q**2 * tau_ph_t * f_dirac_q_dot
+        sigma_t *= 6 * 2 * e**2
+        sigma_t_array = np.append(sigma_t_array,sigma_t)
+        sigma_t = 0
+    plt.plot(T_array,sigma_t_array)
+    plt.show()
+        
 
+
+
+    
 kb_mev = kb / (1e-3 * e)
 kb_ev = kb / (e)
 m_eff_c = 0.48 * me
 energy_gap = 1.6
 energy_norm = 1e20 / e # J to ev  e[ev] = e_norm * e[J], also remember to use m in e[J] and A in e[ev]
 energy_shift = energy_gap / 2 # half of the band gap
-T = 500 #K
+T = 100 #K
 
 
 a = 3.14 # in A
-nx_number = 3 * 30 * 3
-ny_number = 3 * 30 * 3
+nx_number = 3 * 3 * 10
+ny_number = 3 * 3 * 10
 a1 = a * np.array([0.5,np.sqrt(3) / 2])
 a2 = a * np.array([0.5,-np.sqrt(3) / 2])
 delta_1 = a * np.array([0.5,np.sqrt(3) / 6])
@@ -198,13 +224,15 @@ ef = 0.9
 qm = np.sqrt(2 * m_eff_c * (energy_max-energy_shift) / energy_norm) / hbar# in A
 #plot_band_near_k_2d(nx_number, ny_number, b1, b2, energy_max)
 #calculate_total_number_electron(nx_number, ny_number, b1, b2, energy_max)
+
+
 print(times(a1, b1), times(a1, b2), times(a2, b1), times(a2, b2))
 total_number, energy_average = calculate_total_number_electron(nx_number,ny_number,b1,b2,qm)
 
 rho = 3.1 * 1e-7 #g/cm^2
 rho = rho * 1e-3 * 1e4
 
-s = 2200 #m/s
+s = 2100 #m/s
 
 E_c = 2.4 #ev
 E_c = E_c * e
@@ -219,3 +247,5 @@ print('tau_ph is', tau_ph)
 print(skew_part)
 print('skew part is', skew_part2)
 print(E_c_square_test)
+T_array = np.arange(50,300,50)
+plot_transverse(T_array)

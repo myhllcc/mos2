@@ -161,9 +161,16 @@ def calculate_total_number_electron(nx_number, ny_number, b1, b2, qm):
     print('average energy', energy_average)
     return total_number, energy_average
 
+def plot_transverse():
+    q_array = generate_sampling_near_k_2d(nx_number, ny_number, b1, b2, qm)
+    q_x_array = q_array[0]
+    q_y_array = q_array[1]
+    q_y_number = q_y_array.shape[0]
+    print(q_y_number)
+
 kb_mev = kb / (1e-3 * e)
 kb_ev = kb / (e)
-m_eff_c = 0.43 * me
+m_eff_c = 0.48 * me
 energy_gap = 1.6
 energy_norm = 1e20 / e # J to ev  e[ev] = e_norm * e[J], also remember to use m in e[J] and A in e[ev]
 energy_shift = energy_gap / 2 # half of the band gap

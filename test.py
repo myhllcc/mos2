@@ -225,41 +225,162 @@ def plot_f_dot():
     plt.scatter(energy_array,f_dirac_dot)
     plt.show()
 
-def plot_scattering_rate_vs_carrier_density_ef_fixed(T, nx_number, ny_number, b1, b2, energy_max):
-    qm = np.sqrt(2 * m_eff_c * (energy_max - energy_shift) / energy_norm) / hbar  # max q
-    global ef  # Used in calculate_total_number_electron
+def plot_scattering_rate_vs_carrier_density_ef_fixed(t, nx_number, ny_number, b1, b2, energy_max):
+    q_array = generate_sampling_near_k_2d(nx_number, ny_number, b1, b2, qm)
+    global ef
+    q_x_array = q_array[0]
+    q_y_array = q_array[1]
+    q_square_array = q_x_array**2 + q_y_array**2
+    energy_array = (hbar**2 * q_square_array) / (2 * m_eff_c)
+    energy_array = energy_array * energy_norm + energy_shift
 
-    # Explicitly define ef_array using numpy
-    ef_array = np.linspace(-0.05,0.3,10)  # in eV
-
-    # Define carrier_density and scattering_rate as empty NumPy arrays
-    carrier_density_array = np.array([])
-    scattering_rate_array = np.array([])
+    ef_array = np.linspace(-0.05, 0.3, 10)  # in eV
+    carrier_density_array = []
+    sigma_t_array = []
+    mobility_array_cm2 = []
 
     for ef_i in ef_array:
         ef = ef_i
-        total_number, energy_average = calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
+        sigma_t = 0
 
+        total_number, energy_average = calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
         area_bz = (2 * np.pi)**2 / area_unit_cell
         carrier_density = total_number * area_bz / (nx_number * ny_number)
+        carrier_density_array.append(carrier_density)
 
-        tau_ph = hbar**3 * rho * s**2 / (m_eff_c * E_c**2 * kb * T)
-        scattering_rate = 1 / tau_ph
+        for q_x_index, q_x in enumerate(q_x_array):
+            q_y = q_y_array[q_x_index]
+            energy_q = (hbar**2 * (q_x**2 + q_y**2)) / (2 * m_eff_c)
+            energy_q = energy_q * energy_norm + energy_shift
 
-        # Append values to NumPy arrays
-        carrier_density_array = np.append(carrier_density_array, carrier_density)
-        scattering_rate_array = np.append(scattering_rate_array, scattering_rate)
+            tau_ph_t = hbar**3 * rho * s**2 / (m_eff_c * E_c**2 * kb * t)
 
-    # Plot
-    plt.figure(figsize=(8,6))
-    plt.plot(carrier_density_array, scattering_rate_array, marker='o')
+            f_dirac_q = 1 / (np.exp((energy_q - ef) / (kb_ev * t)) + 1)
+            f_dirac_q_dot = f_dirac_q**2 * np.exp((energy_q - ef) / (kb_ev * t)) / (kb * t)
+            v_x_q = hbar * q_x * 1e10 / m_eff_c  # Convert Å⁻¹ to m⁻¹
+
+            sigma_t += v_x_q**2 * tau_ph_t * f_dirac_q_dot
+
+        sigma_t *= 2 * 2 * e**2 / (area_unit_cell * nx_number * ny_number)
+        sigma_t_array.append(sigma_t)
+
+        # Mobility: µ = σ / (n e), convert to cm²/Vs
+        if carrier_density != 0:
+            mobility_cm2 = (sigma_t / (carrier_density * e)) * 1e4
+        else:
+            mobility_cm2 = 0
+        mobility_array_cm2.append(mobility_cm2)
+
+        # Debug
+        print("tau_ph_t =", tau_ph_t)
+        print("v_x_q =", v_x_q)
+        print("carrier_density =", carrier_density)
+        print("sigma_t =", sigma_t)
+        print("mobility (cm²/Vs) =", mobility_cm2)
+
+    # Convert to numpy arrays
+    carrier_density_array = np.array(carrier_density_array)
+    sigma_t_array = np.array(sigma_t_array)
+    mobility_array_cm2 = np.array(mobility_array_cm2)
+
+    # Plot conductivity
+    plt.figure(figsize=(8, 6))
+    plt.plot(carrier_density_array, sigma_t_array, marker='o', label='Conductivity (S)')
     plt.xlabel('Carrier Density (1/m²)')
-    plt.ylabel('Scattering Rate (1/s)')
-    plt.title(f'Scattering Rate vs Carrier Density at T = {T} K')
+    plt.ylabel('Conductivity (S)')
+    plt.title(f'Conductivity vs Carrier Density at T = {t} K')
     plt.grid(True)
+    plt.legend()
     plt.show()
 
-    return carrier_density_array, scattering_rate_array
+    # Plot mobility
+    plt.figure(figsize=(8, 6))
+    plt.plot(carrier_density_array, mobility_array_cm2, marker='s', color='green', label='Mobility (cm²/Vs)')
+    plt.xlabel('Carrier Density (1/m²)')
+    plt.ylabel('Mobility (cm²/Vs)')
+    plt.title(f'Mobility vs Carrier Density at T = {t} K')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+    return carrier_density_array, sigma_t_array, mobility_array_cm2
+
+def plot_transport_vs_temperature(ef_fixed, T_min, T_max, T_points, nx_number, ny_number, b1, b2):
+    q_array = generate_sampling_near_k_2d(nx_number, ny_number, b1, b2, qm)
+    global ef
+    q_x_array = q_array[0]
+    q_y_array = q_array[1]
+    q_square_array = q_x_array**2 + q_y_array**2
+    energy_array = (hbar**2 * q_square_array) / (2 * m_eff_c)
+    energy_array = energy_array * energy_norm + energy_shift
+
+    temperature_array = np.linspace(T_min, T_max, T_points)
+    carrier_density_array = []
+    sigma_t_array = []
+    mobility_array_cm2 = []
+
+    ef = ef_fixed  
+
+    for t in temperature_array:
+        sigma_t = 0
+
+        total_number, energy_average = calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
+        area_bz = (2 * np.pi)**2 / area_unit_cell
+        carrier_density = total_number * area_bz / (nx_number * ny_number)
+        carrier_density_array.append(carrier_density)
+
+        for q_x_index, q_x in enumerate(q_x_array):
+            q_y = q_y_array[q_x_index]
+            energy_q = (hbar**2 * (q_x**2 + q_y**2)) / (2 * m_eff_c)
+            energy_q = energy_q * energy_norm + energy_shift
+
+            tau_ph_t = hbar**3 * rho * s**2 / (m_eff_c * E_c**2 * kb * t)
+
+            f_dirac_q = 1 / (np.exp((energy_q - ef) / (kb_ev * t)) + 1)
+            f_dirac_q_dot = f_dirac_q**2 * np.exp((energy_q - ef) / (kb_ev * t)) / (kb * t)
+            v_x_q = hbar * q_x * 1e10 / m_eff_c  # Convert Å⁻¹ to m⁻¹
+
+            sigma_t += v_x_q**2 * tau_ph_t * f_dirac_q_dot
+
+        sigma_t *= 2 * 2 * e**2 / (area_unit_cell * nx_number * ny_number)
+        sigma_t_array.append(sigma_t)
+
+        if carrier_density != 0:
+            mobility_cm2 = (sigma_t / (carrier_density * e)) * 1e4
+        else:
+            mobility_cm2 = 0
+        mobility_array_cm2.append(mobility_cm2)
+        print(f"T = {t} K")
+        print("tau_ph_t =", tau_ph_t)
+        print("v_x_q =", v_x_q)
+        print("carrier_density =", carrier_density)
+        print("sigma_t =", sigma_t)
+        print("mobility (cm²/Vs) =", mobility_cm2)
+    temperature_array = np.array(temperature_array)
+    carrier_density_array = np.array(carrier_density_array)
+    sigma_t_array = np.array(sigma_t_array)
+    mobility_array_cm2 = np.array(mobility_array_cm2)
+    plt.figure(figsize=(8, 6))
+    plt.plot(temperature_array, sigma_t_array, marker='o', label='Conductivity (S)')
+    plt.xlabel('Temperature (K)')
+    plt.ylabel('Conductivity (S)')
+    plt.title(f'Conductivity vs Temperature at EF = {ef_fixed} eV')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+    plt.figure(figsize=(8, 6))
+    plt.plot(temperature_array, mobility_array_cm2, marker='s', color='green', label='Mobility (cm²/Vs)')
+    plt.xlabel('Temperature (K)')
+    plt.ylabel('Mobility (cm²/Vs)')
+    plt.title(f'Mobility vs Temperature at EF = {ef_fixed} eV')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+    return temperature_array, carrier_density_array, sigma_t_array, mobility_array_cm2
+
+
 
 
 
@@ -275,8 +396,8 @@ T = 30 #K
 
 
 a = 3.16 # in A
-nx_number = 3 * 3 * 30
-ny_number = 3 * 3 * 30
+nx_number = 420
+ny_number = 420
 a1 = a * np.array([0.5,np.sqrt(3) / 2])
 a2 = a * np.array([0.5,-np.sqrt(3) / 2])
 area_unit_cell = np.abs(a1[0] * a2[1] - a2[0] * a1[1]) * 1e-20
@@ -328,5 +449,14 @@ print(E_c_square_test)
 ef_array = np.array([0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4])  # in eV
 T = 100  # K
 
-plot_scattering_rate_vs_carrier_density_ef_fixed(T, nx_number, ny_number, b1, b2, energy_max)
+#plot_scattering_rate_vs_carrier_density_ef_fixed(T, nx_number, ny_number, b1, b2, energy_max)
 
+plot_transport_vs_temperature(
+    ef_fixed=0.05,        # Fermi level in eV
+    T_min=50,
+    T_max=700,
+    T_points=10,
+    nx_number=420,
+    ny_number=420,
+    b1=b1, b2=b2
+)

@@ -225,34 +225,42 @@ def plot_f_dot():
     plt.scatter(energy_array,f_dirac_dot)
     plt.show()
 
-def plot_scattering_rate_vs_carrier_density(ef_array, T, nx_number, ny_number, b1, b2, energy_max):
-    carrier_density_array = []
-    scattering_rate_array = []
-    
-    global ef  
-
+def plot_scattering_rate_vs_carrier_density_ef_fixed(T, nx_number, ny_number, b1, b2, energy_max):
     qm = np.sqrt(2 * m_eff_c * (energy_max - energy_shift) / energy_norm) / hbar  # max q
+    global ef  # Used in calculate_total_number_electron
+
+    # Explicitly define ef_array using numpy
+    ef_array = np.linspace(-0.05,0.3,10)  # in eV
+
+    # Define carrier_density and scattering_rate as empty NumPy arrays
+    carrier_density_array = np.array([])
+    scattering_rate_array = np.array([])
 
     for ef_i in ef_array:
         ef = ef_i
         total_number, energy_average = calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
-        
+
         area_bz = (2 * np.pi)**2 / area_unit_cell
         carrier_density = total_number * area_bz / (nx_number * ny_number)
-        carrier_density_array.append(carrier_density)
 
-        g = m_eff_c / (2 * np.pi * np.square(hbar))
         tau_ph = hbar**3 * rho * s**2 / (m_eff_c * E_c**2 * kb * T)
         scattering_rate = 1 / tau_ph
-        scattering_rate_array.append(scattering_rate)
 
+        # Append values to NumPy arrays
+        carrier_density_array = np.append(carrier_density_array, carrier_density)
+        scattering_rate_array = np.append(scattering_rate_array, scattering_rate)
+
+    # Plot
     plt.figure(figsize=(8,6))
     plt.plot(carrier_density_array, scattering_rate_array, marker='o')
     plt.xlabel('Carrier Density (1/m²)')
     plt.ylabel('Scattering Rate (1/s)')
-    plt.title(f'Scattering Rate vs Carrier Density at T={T} K')
+    plt.title(f'Scattering Rate vs Carrier Density at T = {T} K')
     plt.grid(True)
     plt.show()
+
+    return carrier_density_array, scattering_rate_array
+
 
 
     
@@ -297,7 +305,7 @@ area_bz = (2 * np.pi)**2 / area_unit_cell
 carrier_density = total_number * area_bz / (nx_number * ny_number)
 print("carrier_density: ", carrier_density)
 rho = 3.1 * 1e-7 #g/cm^2
-rho = rho * 1e-3 * 1e4
+rho = rho * 1e-3 * 1e4 #kg/m^2
 
 s = 2100 #m/s
 
@@ -317,5 +325,8 @@ print(E_c_square_test)
 #plot_transverse()
 #plot_f_dot()
 
-#ef_array = np.linspace(0.05, 0.4, 10)  # example Fermi energies in eV
-#plot_scattering_rate_vs_carrier_density(ef_array, T, nx_number, ny_number, b1, b2, energy_max)
+ef_array = np.array([0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4])  # in eV
+T = 100  # K
+
+plot_scattering_rate_vs_carrier_density_ef_fixed(T, nx_number, ny_number, b1, b2, energy_max)
+

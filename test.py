@@ -225,7 +225,34 @@ def plot_f_dot():
     plt.scatter(energy_array,f_dirac_dot)
     plt.show()
 
+def plot_scattering_rate_vs_carrier_density(ef_array, T, nx_number, ny_number, b1, b2, energy_max):
+    carrier_density_array = []
+    scattering_rate_array = []
+    
+    global ef  
 
+    qm = np.sqrt(2 * m_eff_c * (energy_max - energy_shift) / energy_norm) / hbar  # max q
+
+    for ef_i in ef_array:
+        ef = ef_i
+        total_number, energy_average = calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
+        
+        area_bz = (2 * np.pi)**2 / area_unit_cell
+        carrier_density = total_number * area_bz / (nx_number * ny_number)
+        carrier_density_array.append(carrier_density)
+
+        g = m_eff_c / (2 * np.pi * np.square(hbar))
+        tau_ph = hbar**3 * rho * s**2 / (m_eff_c * E_c**2 * kb * T)
+        scattering_rate = 1 / tau_ph
+        scattering_rate_array.append(scattering_rate)
+
+    plt.figure(figsize=(8,6))
+    plt.plot(carrier_density_array, scattering_rate_array, marker='o')
+    plt.xlabel('Carrier Density (1/m²)')
+    plt.ylabel('Scattering Rate (1/s)')
+    plt.title(f'Scattering Rate vs Carrier Density at T={T} K')
+    plt.grid(True)
+    plt.show()
 
 
     
@@ -235,12 +262,13 @@ m_eff_c = 0.48 * me
 energy_gap = 1.6
 energy_norm = 1e20 / e # J to ev  e[ev] = e_norm * e[J], also remember to use m in e[J] and A in e[ev]
 energy_shift = energy_gap / 2 # half of the band gap
+energy_shift = 0
 T = 30 #K
 
 
 a = 3.16 # in A
-nx_number = 3 * 3 * 10
-ny_number = 3 * 3 * 10
+nx_number = 3 * 3 * 30
+ny_number = 3 * 3 * 30
 a1 = a * np.array([0.5,np.sqrt(3) / 2])
 a2 = a * np.array([0.5,-np.sqrt(3) / 2])
 area_unit_cell = np.abs(a1[0] * a2[1] - a2[0] * a1[1]) * 1e-20
@@ -256,8 +284,8 @@ K = np.array([4 * np.pi / (3 * a),0])
 #plot_real_space(nx_number, ny_number, a1, a2, delta_1, delta_2)
 #plot_reciprocal_space(a,nx_number, ny_number, b1, b2)
 #plot_band_near_k_1d(nx_number,ny_number,b1,b2,K)
-energy_max = 1.1 #ev
-ef = 0.85
+energy_max = 0.5 #ev
+ef = 0.2
 qm = np.sqrt(2 * m_eff_c * (energy_max-energy_shift) / energy_norm) / hbar# in A
 #plot_band_near_k_2d(nx_number, ny_number, b1, b2, energy_max)
 #calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
@@ -265,7 +293,8 @@ qm = np.sqrt(2 * m_eff_c * (energy_max-energy_shift) / energy_norm) / hbar# in A
 
 print(times(a1, b1), times(a1, b2), times(a2, b1), times(a2, b2))
 total_number, energy_average = calculate_total_number_electron(nx_number,ny_number,b1,b2,qm)
-carrier_density = total_number / area_unit_cell
+area_bz = (2 * np.pi)**2 / area_unit_cell
+carrier_density = total_number * area_bz / (nx_number * ny_number)
 print("carrier_density: ", carrier_density)
 rho = 3.1 * 1e-7 #g/cm^2
 rho = rho * 1e-3 * 1e4
@@ -287,3 +316,6 @@ print('skew part is', skew_part2)
 print(E_c_square_test)
 #plot_transverse()
 #plot_f_dot()
+
+#ef_array = np.linspace(0.05, 0.4, 10)  # example Fermi energies in eV
+#plot_scattering_rate_vs_carrier_density(ef_array, T, nx_number, ny_number, b1, b2, energy_max)

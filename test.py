@@ -250,18 +250,19 @@ def plot_scattering_rate_vs_carrier_density_ef_fixed(t, nx_number, ny_number, b1
     mobility_array_cm2 = []
     L_1_array = []
     s_xx_array = []
+    scattering_rate = np.array([])
 
     for ef_i in ef_array:
         ef = ef_i
         sigma_t = 0
         L_1 = 0
         s_xx = 0
-
         total_number, energy_average = calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
         area_bz = (2 * np.pi)**2 / area_unit_cell
         carrier_density = total_number  / ((nx_number * ny_number) * area_unit_cell) * 2 * 2
         #carrier_density = total_number / area_unit_cell
         carrier_density_array.append(carrier_density)
+
 
 
         for q_x_index, q_x in enumerate(q_x_array):
@@ -310,7 +311,7 @@ def plot_scattering_rate_vs_carrier_density_ef_fixed(t, nx_number, ny_number, b1
 
     # Plot conductivity
     plt.figure(figsize=(8, 6))
-    #sigma_t_array = sigma_t_array *(1/6.5) * 1e10
+    sigma_t_array = sigma_t_array *(1/6.5) * 1e10
     plt.plot(carrier_density_array, sigma_t_array, marker='o', label='Conductivity (S)')
     plt.xscale('log')
     plt.yscale('log')
@@ -447,6 +448,13 @@ def plot_transverse_nx_number(ef,t, b1, b2):
     return carrier_density_array, sigma_t_array, mobility_array_cm2
 
 
+def calculate_side_jump(m_eff,E_gap):
+    E_gap = E_gap * e #convert from ev to J
+    print("enery gap is: ", E_gap)
+    gamma_square = hbar**2 * E_gap / (2 * m_eff)
+    xi = gamma_square / (E_gap**2)
+    print("xi is: ", xi)
+
 
 
 
@@ -515,4 +523,5 @@ print(E_c_square_test)
 
 #plot_scattering_rate_vs_carrier_density_ef_fixed(T, nx_number, ny_number, b1, b2, energy_max)
 ef_array = np.array([0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4])  # in eV
-plot_transverse_nx_number(ef,T,b1,b2)
+#plot_transverse_nx_number(ef,T,b1,b2)
+calculate_side_jump(m_eff_c, energy_gap)

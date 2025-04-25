@@ -162,7 +162,7 @@ def calculate_total_number_electron(nx_number, ny_number, b1, b2, qm):
     return total_number, energy_average
 
 def plot_transverse():
-    nx_number_array = np.arange(10,700,50)
+    nx_number_array = np.arange(10,500,50)
     #nx_number_array = np.array([420])
     #T_array = np.arange(10,300,10)
     T_array = np.array([100])
@@ -207,7 +207,7 @@ def plot_transverse():
     if T_array.shape[0] == 1:
         plt.plot(nx_number_array,sigma_t_array)
         plt.show()
-        plt.scatter(nx_number, carrier_density_array)
+        plt.scatter(nx_number_array, carrier_density_array)
         plt.show()
     else:
         plt.plot(T_array,sigma_t_array)
@@ -348,29 +348,36 @@ def plot_scattering_rate_vs_carrier_density_ef_fixed(t, nx_number, ny_number, b1
 
     return carrier_density_array, sigma_t_array, mobility_array_cm2
 
-def plot_transport_vs_temperature(ef_fixed, T_min, T_max, T_points, nx_number, ny_number, b1, b2):
-    q_array = generate_sampling_near_k_2d(nx_number, ny_number, b1, b2, qm)
-    global ef
-    q_x_array = q_array[0]
-    q_y_array = q_array[1]
-    q_square_array = q_x_array**2 + q_y_array**2
-    energy_array = (hbar**2 * q_square_array) / (2 * m_eff_c)
-    energy_array = energy_array * energy_norm + energy_shift
-
-    temperature_array = np.linspace(T_min, T_max, T_points)
+def plot_transverse_nx_number(ef,t, b1, b2):
+    print("Temperature is: ", T)
+    print("fermi energy is: ", ef)
+    nx_number_array = np.arange(100,500,50)
     carrier_density_array = []
     sigma_t_array = []
     mobility_array_cm2 = []
+    L_1_array = []
+    s_xx_array = []
+    for nx_number in nx_number_array:
+        ny_number = nx_number
+        print("nx number is: ",nx_number)
+        print("ny_number is: ",ny_number)
+        q_array = generate_sampling_near_k_2d(nx_number, ny_number, b1, b2, qm)
+        q_x_array = q_array[0]
+        q_y_array = q_array[1]
+        q_square_array = q_x_array**2 + q_y_array**2
+        energy_array = (hbar**2 * q_square_array) / (2 * m_eff_c)
+        energy_array = energy_array * energy_norm + energy_shift
 
-    ef = ef_fixed  
-
-    for t in temperature_array:
         sigma_t = 0
+        L_1 = 0
+        s_xx = 0
 
         total_number, energy_average = calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
         area_bz = (2 * np.pi)**2 / area_unit_cell
-        carrier_density = total_number * area_bz / (nx_number * ny_number)
+        carrier_density = total_number  / ((nx_number * ny_number) * area_unit_cell) * 2 * 2
+        #carrier_density = total_number / area_unit_cell
         carrier_density_array.append(carrier_density)
+
 
         for q_x_index, q_x in enumerate(q_x_array):
             q_y = q_y_array[q_x_index]
@@ -384,38 +391,61 @@ def plot_transport_vs_temperature(ef_fixed, T_min, T_max, T_points, nx_number, n
             v_x_q = hbar * q_x * 1e10 / m_eff_c  # Convert Å⁻¹ to m⁻¹
 
             sigma_t += v_x_q**2 * tau_ph_t * f_dirac_q_dot
+            L_1 += v_x_q**2 * tau_ph_t * f_dirac_q_dot * (energy_q - ef) * e #convert energy from ev to j
 
-        sigma_t *= 2 * 2 * e**2 / (area_unit_cell * nx_number * ny_number)
+
+        sigma_t *= 2 * 2 * e**2 / (area_unit_cell * nx_number * ny_number) #in m
+        L_1 *= 4 * e**2 / (area_unit_cell * nx_number * ny_number)
+        s_xx =  1 / (e * t) * (L_1 / sigma_t)
         sigma_t_array.append(sigma_t)
+        L_1_array.append(L_1)
+        s_xx_array.append(s_xx)
 
         if carrier_density != 0:
-            mobility_cm2 = (sigma_t / (carrier_density * e)) * 1e4
+            mobility_cm2 = (sigma_t / (carrier_density * e)) * 1e4 #in cm^2
         else:
             mobility_cm2 = 0
         mobility_array_cm2.append(mobility_cm2)
-        print(f"T = {t} K")
-        print("tau_ph_t =", tau_ph_t)
-        print("v_x_q =", v_x_q)
-        print("carrier_density =", carrier_density)
-        print("sigma_t =", sigma_t)
-        print("mobility (cm²/Vs) =", mobility_cm2)
-    temperature_array = np.array(temperature_array)
+
+    # Convert to numpy arrays
     carrier_density_array = np.array(carrier_density_array)
     sigma_t_array = np.array(sigma_t_array)
     mobility_array_cm2 = np.array(mobility_array_cm2)
+    carrier_density_array = carrier_density_array * 1e-4 #in cm^-2
+    L_1_array = np.array(L_1_array)
+    s_xx_array = np.array(s_xx_array)
+
+    # Plot conductivity
     plt.figure(figsize=(8, 6))
-    plt.plot(temperature_array, sigma_t_array, marker='o', label='Conductivity')
+    #sigma_t_array = sigma_t_array *(1/6.5) * 1e10
+    plt.plot(nx_number_array, sigma_t_array, marker='o', label='Conductivity (S)')
+    plt.yscale('log')
+    plt.xlabel('nx_number')
+    plt.ylabel('Conductivity')
+    plt.title(f'Conductivity vs Carrier Density at T = {t} K')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+    # Plot mobility
+    plt.figure(figsize=(8, 6))
+    plt.plot(nx_number_array, mobility_array_cm2, marker='s', color='green', label='Mobility (cm²/Vs)')
+    plt.xlabel('nx_number')
+    plt.ylabel('Mobility (cm²/Vs)')
+    plt.title(f'Mobility vs Carrier Density at T = {t} K')
     plt.grid(True)
     plt.legend()
     plt.show()
 
     plt.figure(figsize=(8, 6))
-    plt.plot(temperature_array, mobility_array_cm2, marker='s', color='green', label='Mobility (cm²/Vs)')
+    plt.plot(nx_number_array,carrier_density_array, marker='s', color='green', label='carrier density')
+    plt.xlabel('nx_number')
+    plt.ylabel('carrier density cm^-2')
     plt.grid(True)
-    plt.legend()
     plt.show()
 
-    return temperature_array, carrier_density_array, sigma_t_array, mobility_array_cm2
+    return carrier_density_array, sigma_t_array, mobility_array_cm2
+
 
 
 
@@ -480,12 +510,9 @@ print('tau_ph is', tau_ph)
 print(skew_part)
 print('skew part is', skew_part2)
 print(E_c_square_test)
-plot_transverse()
+#plot_transverse()
 #plot_f_dot()
 
+#plot_scattering_rate_vs_carrier_density_ef_fixed(T, nx_number, ny_number, b1, b2, energy_max)
 ef_array = np.array([0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4])  # in eV
-T = 300  # K
-
-plot_scattering_rate_vs_carrier_density_ef_fixed(T, nx_number, ny_number, b1, b2, energy_max)
-
-#plot_transport_vs_temperature( ef_fixed=0.05,T_min=50,T_max=700,T_points=10, nx_number=420,ny_number=420,b1=b1, b2=b2)
+plot_transverse_nx_number(ef,T,b1,b2)

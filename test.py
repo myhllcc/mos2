@@ -239,7 +239,7 @@ def plot_scattering_rate_vs_carrier_density_ef_fixed():
     print("T = ", T)
     #print("ef = ", ef)
     nx_number_array = np.arange(100, 500, 100)
-    #nx_number_array = np.array([300])
+    nx_number_array = np.array([300])
     plt.figure(figsize = (8,6))
     fig_conduc = plt.gcf()
     plt.figure(figsize = (8,6))
@@ -260,7 +260,7 @@ def plot_scattering_rate_vs_carrier_density_ef_fixed():
         ef_array = np.linspace(-0.1, 0.3, 10)  # in eV
         carrier_density_array = []
         sigma_t_array = []
-        mobility_array_cm2 = []
+        mobility_array = []
         L_1_array = []
         s_xx_array = []
         scattering_rate = np.array([])
@@ -317,7 +317,7 @@ def plot_scattering_rate_vs_carrier_density_ef_fixed():
                 mobility_cm2 = (sigma_t / (carrier_density * e)) * 1e4
             else:
                 mobility_cm2 = 0
-            mobility_array_cm2.append(mobility_cm2)
+            mobility_array.append(mobility_cm2)
 
             # Debug
             print("tau_ph_t =", tau_ph_t)
@@ -329,7 +329,7 @@ def plot_scattering_rate_vs_carrier_density_ef_fixed():
         # Convert to numpy arrays
         carrier_density_array = np.array(carrier_density_array)
         sigma_t_array = np.array(sigma_t_array)
-        mobility_array_cm2 = np.array(mobility_array_cm2)
+        mobility_array = np.array(mobility_array)
         carrier_density_array = carrier_density_array * 1e-4
         L_1_array = np.array(L_1_array)
         s_xx_array = np.array(s_xx_array)
@@ -341,7 +341,7 @@ def plot_scattering_rate_vs_carrier_density_ef_fixed():
         plt.plot(carrier_density_array,conductivity_side_jump_array,marker='x',label='side jump')
         # Plot mobility
         plt.figure(fig_mob.number)
-        plt.plot(carrier_density_array, mobility_array_cm2, marker='s', color='green', label=f'nx_number ={nx_number} ')
+        plt.plot(carrier_density_array, mobility_array, marker='s', color='green', label=f'nx_number ={nx_number} ')
         plt.figure(fig_sxx.number)
         s_xx_array = s_xx_array / 1e-6
         plt.plot(carrier_density_array,s_xx_array)
@@ -370,72 +370,7 @@ def plot_scattering_rate_vs_carrier_density_ef_fixed():
     plt.xlim((1e12,1e14))
     plt.show()
 
-    return carrier_density_array, sigma_t_array, mobility_array_cm2
-
-def test_size_converge():
-    print("T = ", T)
-    print("ef = ", ef)
-    nx_number_array = np.arange(100, 500, 50)
-    nx_number_array = np.array([300])
-    plt.figure(figsize = (8,6))
-    fig_conduc = plt.gcf()
-    plt.figure(figsize = (8,6))
-    fig_mob = plt.gcf()
-    plt.figure(figsize = (8,6))
-    fig_sxx = plt.gcf()
-    f = True
-    for nx_number in nx_number_array:
-        carrier_density_array = []
-        sigma_xx_array = []
-        L_1_array = []
-        s_xx_array = []
-        mobility_array = []
-        ny_number = nx_number
-        print("nx number is: ",nx_number)
-        q_array = generate_sampling_near_k_2d(nx_number, ny_number, b1, b2, qm)# This is in A
-        q_x_array = q_array[0]
-        q_y_array = q_array[1]
-        q_square_array = q_x_array**2 + q_y_array**2
-        energy_array = (hbar**2 * q_square_array) / (2 * m_eff_c) #This energy is in J
-        energy_array = energy_array * energy_norm + energy_shift #This convert energy from J to ev, energy_shift is set to 0
-        sigma_xx = 0
-        s_xx = 0
-        L_1 = 0
-
-        total_number, energy_average = calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
-        carrier_density = total_number / ((nx_number * ny_number) * area_unit_cell) * 2 * 2 #This is in m-2
-        carrier_density_array.append(carrier_density)
-        for q_x_index, q_x in enumerate(q_x_array):
-            q_y = q_y_array[q_x_index]
-            energy_q = (hbar**2 * (q_x**2 + q_y**2)) / (2 * m_eff_c) #in J
-            energy_q = energy_q * energy_norm + energy_shift # convert from ev to J
-            tau_ph_t = hbar**3 * rho * s**2 / (m_eff_c * E_c**2 * kb * T)
-            f_dirac_q = 1 / (np.exp((energy_q - ef) / (kb_ev * T)) + 1)
-            f_dirac_q_dot = f_dirac_q**2 * np.exp((energy_q - ef) / (kb_ev * T)) / (kb * T) #in J-1
-            v_x_q = hbar * q_x * 1e10 / m_eff_c #in m-1
-            sigma_xx += v_x_q**2 * tau_ph_t * f_dirac_q_dot
-            L_1 += v_x_q**2 * tau_ph_t * f_dirac_q_dot * (energy_q - ef) * e
-        sigma_xx *= 2 * 2 * e**2 / (area_unit_cell * nx_number * ny_number)
-        L_1 *= 4 * e**2 / (area_unit_cell * nx_number * ny_number)
-        s_xx = 1 / (e * T) * (L_1 / sigma_xx)
-        L_1_array.append(L_1)
-        s_xx_array.append(s_xx)
-        sigma_xx_array.append(sigma_xx)
-        mobility = (sigma_xx / (carrier_density * e)) * 1e4 #in cm2
-        mobility_array.append(mobility)
-    
-        carrier_density_array = np.array(carrier_density_array) * 1e-4 #in cm-2
-        mobility_array = np.array(mobility_array)
-        L_1_array = np.array(L_1_array)
-        s_xx_array = np.array(s_xx_array)
-        plt.figure(fig_conduc.number)
-        plt.scatter(carrier_density_array, sigma_xx_array, marker='o', label=f'nx={nx_number}')
-
-    plt.figure(fig_conduc.number)
-    plt.show()
-        
-        
-
+    return carrier_density_array, sigma_t_array, mobility_array
 
 def plot_transverse_nx_number(ef,t, b1, b2):
     print("Temperature is: ", T)
@@ -443,7 +378,7 @@ def plot_transverse_nx_number(ef,t, b1, b2):
     nx_number_array = np.arange(100,500,50)
     carrier_density_array = []
     sigma_t_array = []
-    mobility_array_cm2 = []
+    mobility_array = []
     L_1_array = []
     s_xx_array = []
     for nx_number in nx_number_array:
@@ -494,12 +429,12 @@ def plot_transverse_nx_number(ef,t, b1, b2):
             mobility_cm2 = (sigma_t / (carrier_density * e)) * 1e4 #in cm^2
         else:
             mobility_cm2 = 0
-        mobility_array_cm2.append(mobility_cm2)
+        mobility_array.append(mobility_cm2)
 
     # Convert to numpy arrays
     carrier_density_array = np.array(carrier_density_array)
     sigma_t_array = np.array(sigma_t_array)
-    mobility_array_cm2 = np.array(mobility_array_cm2)
+    mobility_array = np.array(mobility_array)
     carrier_density_array = carrier_density_array * 1e-4 #in cm^-2
     L_1_array = np.array(L_1_array)
     s_xx_array = np.array(s_xx_array)
@@ -518,7 +453,7 @@ def plot_transverse_nx_number(ef,t, b1, b2):
 
     # Plot mobility
     plt.figure(figsize=(8, 6))
-    plt.plot(nx_number_array, mobility_array_cm2, marker='s', color='green', label='Mobility (cm²/Vs)')
+    plt.plot(nx_number_array, mobility_array, marker='s', color='green', label='Mobility (cm²/Vs)')
     plt.xlabel('nx_number')
     plt.ylabel('Mobility (cm²/Vs)')
     plt.title(f'Mobility vs Carrier Density at T = {t} K')
@@ -533,7 +468,7 @@ def plot_transverse_nx_number(ef,t, b1, b2):
     plt.grid(True)
     plt.show()
 
-    return carrier_density_array, sigma_t_array, mobility_array_cm2
+    return carrier_density_array, sigma_t_array, mobility_array
 
 
 def calculate_side_jump(m_eff,E_gap,nx_number,ny_number):
@@ -550,12 +485,110 @@ def calculate_side_jump(m_eff,E_gap,nx_number,ny_number):
     print("conductivity of side jump is: ", conductivity_side_jump)
     print("mobility of side jump is in cm: ", mobility_side_jump)
 
+def calculate_valley_angle_differnet_temperature(ef):
+    print(f"ef is {ef}")
+
+    temperature_array = np.arange(10,500,20)
+    #temperature_array = np.array([300])
+    q_array = generate_sampling_near_k_2d(nx_number, ny_number, b1, b2, qm)
+    q_x_array = q_array[0]
+    q_y_array = q_array[1]
+    q_square_array = q_x_array**2 + q_y_array**2
+    energy_array = (hbar**2 * q_square_array) / (2 * m_eff_c)
+    energy_array = energy_array * energy_norm + energy_shift
+    carrier_density_array = []
+    sigma_t_array = []
+    mobility_array = []
+    L_1_array = []
+    s_xx_array = []
+    conductivity_side_jump_array = []
+    for T in temperature_array:
+        print(T)
+        sigma_t = 0
+        L_1 = 0
+        s_xx = 0
+        total_number, energy_average = calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
+        carrier_density = total_number  / ((nx_number * ny_number) * area_unit_cell) * 2 * 2
+        #carrier_density = total_number / area_unit_cell
+        carrier_density_array.append(carrier_density)
+        for q_x_index, q_x in enumerate(q_x_array):
+            q_y = q_y_array[q_x_index]
+            energy_q = (hbar**2 * (q_x**2 + q_y**2)) / (2 * m_eff_c)
+            energy_q = energy_q * energy_norm + energy_shift
+
+            tau_ph_t = hbar**3 * rho * s**2 / (m_eff_c * E_c**2 * kb * T)
+
+            f_dirac_q = 1 / (np.exp((energy_q - ef) / (kb_ev * T)) + 1)
+            f_dirac_q_dot = f_dirac_q**2 * np.exp((energy_q - ef) / (kb_ev * T)) / (kb * T)
+            v_x_q = hbar * q_x * 1e10 / m_eff_c  # Convert Å⁻¹ to m⁻¹
+
+            sigma_t += v_x_q**2 * tau_ph_t * f_dirac_q_dot
+            L_1 += v_x_q**2 * tau_ph_t * f_dirac_q_dot * (energy_q - ef) * e #convert energy from ev to j
+        sigma_t *= 2 * 2 * e**2 / (area_unit_cell * nx_number * ny_number)
+        L_1 *= 4 * e**2 / (area_unit_cell * nx_number * ny_number)
+        s_xx =  1 / (e * T) * (L_1 / sigma_t)
+        sigma_t_array.append(sigma_t)
+        L_1_array.append(L_1)
+        s_xx_array.append(s_xx)
+        E_gap = energy_gap
+        E_gap = E_gap * e #convert from ev to J
+        print("enery gap is: ", E_gap)
+        gamma_square = hbar**2 * E_gap / (2 * m_eff_c)
+        xi = gamma_square / (E_gap**2)
+        print("xi is: ", xi)
+        conductivity_side_jump = 2 * e**2 / hbar * xi * carrier_density
+        mobility_side_jump = conductivity_side_jump / (carrier_density * e) * 1e4 #convert to cm^-2
+        print("conductivity of side jump is: ", conductivity_side_jump)
+        print("mobility of side jump is in cm: ", mobility_side_jump)
+        conductivity_side_jump_array.append(conductivity_side_jump)
+
+        # Mobility: µ = σ / (n e), convert to cm²/Vs
+        if carrier_density != 0:
+            mobility_cm2 = (sigma_t / (carrier_density * e)) * 1e4
+        else:
+            mobility_cm2 = 0
+        mobility_array.append(mobility_cm2)
+
+        # Debug
+        print("tau_ph_t =", tau_ph_t)
+        print("v_x_q =", v_x_q)
+        print("carrier_density =", carrier_density)
+        print("sigma_t =", sigma_t)
+        print("mobility (cm²/Vs) =", mobility_cm2)
+
+    # Convert to numpy arrays
+    carrier_density_array = np.array(carrier_density_array)
+    sigma_t_array = np.array(sigma_t_array)
+    mobility_array = np.array(mobility_array)
+    carrier_density_array = carrier_density_array * 1e-4
+    L_1_array = np.array(L_1_array)
+    s_xx_array = np.array(s_xx_array)
+    valley_angle_array = sigma_t_array / conductivity_side_jump_array
+    # Plot conductivity
+    sigma_t_array = sigma_t_array 
+    plt.plot(temperature_array, sigma_t_array, marker='o', label=f'nx_number ={nx_number} ')
+    plt.plot(temperature_array,conductivity_side_jump_array,marker='x',label='side jump')
+    plt.yscale('log')
+    plt.show()
+    # Plot mobility
+    plt.plot(temperature_array, mobility_array, marker='s', color='green', label=f'nx_number ={nx_number} ')
+    plt.show()
+
+    #plt.figure(fig_sxx.number)
+    s_xx_array = s_xx_array / 1e-6
+    plt.scatter(temperature_array,s_xx_array)
+    plt.show()
+
+    #plt.figure(fig_val_ang.number)
+    valley_angle_array = 1/ valley_angle_array
+    plt.plot(temperature_array,valley_angle_array)
+    plt.title('angle')
+    plt.show()
 
 
 
+    return carrier_density_array, sigma_t_array, mobility_array
 
-
-    
 kb_mev = kb / (1e-3 * e)
 kb_ev = kb / (e)
 m_eff_c = 0.40 * me
@@ -585,7 +618,7 @@ K = np.array([4 * np.pi / (3 * a),0])
 #plot_reciprocal_space(a,nx_number, ny_number, b1, b2)
 #plot_band_near_k_1d(nx_number,ny_number,b1,b2,K)
 energy_max = 0.5 #ev
-ef = 0.2
+ef = -0.05
 qm = np.sqrt(2 * m_eff_c * (energy_max-energy_shift) / energy_norm) / hbar# in A
 #plot_band_near_k_2d(nx_number, ny_number, b1, b2, energy_max)
 #calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
@@ -618,7 +651,8 @@ print(E_c_square_test)
 #plot_f_dot()
 
 #test_size_converge()
-plot_scattering_rate_vs_carrier_density_ef_fixed()
+#plot_scattering_rate_vs_carrier_density_ef_fixed()
 ef_array = np.array([0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4])  # in eV
 #plot_transverse_nx_number(ef,T,b1,b2)
 #calculate_side_jump(m_eff_c, energy_gap,nx_number,ny_number)
+calculate_valley_angle_differnet_temperature(ef)

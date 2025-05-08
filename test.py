@@ -488,7 +488,7 @@ def calculate_side_jump(m_eff,E_gap,nx_number,ny_number):
 def calculate_valley_angle_differnet_temperature(ef):
     print(f"ef is {ef}")
 
-    temperature_array = np.arange(10,500,20)
+    temperature_array = np.arange(20,300,20)
     #temperature_array = np.array([300])
     q_array = generate_sampling_near_k_2d(nx_number, ny_number, b1, b2, qm)
     q_x_array = q_array[0]
@@ -563,7 +563,7 @@ def calculate_valley_angle_differnet_temperature(ef):
     carrier_density_array = carrier_density_array * 1e-4
     L_1_array = np.array(L_1_array)
     s_xx_array = np.array(s_xx_array)
-    valley_angle_array = sigma_t_array / conductivity_side_jump_array
+    valley_angle_array = conductivity_side_jump_array / sigma_t_array
     # Plot conductivity
     sigma_t_array = sigma_t_array 
     plt.plot(temperature_array, sigma_t_array, marker='o', label=f'nx_number ={nx_number} ')
@@ -580,7 +580,6 @@ def calculate_valley_angle_differnet_temperature(ef):
     plt.show()
 
     #plt.figure(fig_val_ang.number)
-    valley_angle_array = 1/ valley_angle_array
     plt.plot(temperature_array,valley_angle_array)
     plt.title('angle')
     plt.show()
@@ -618,7 +617,7 @@ K = np.array([4 * np.pi / (3 * a),0])
 #plot_reciprocal_space(a,nx_number, ny_number, b1, b2)
 #plot_band_near_k_1d(nx_number,ny_number,b1,b2,K)
 energy_max = 0.5 #ev
-ef = -0.05
+ef = 0.1
 qm = np.sqrt(2 * m_eff_c * (energy_max-energy_shift) / energy_norm) / hbar# in A
 #plot_band_near_k_2d(nx_number, ny_number, b1, b2, energy_max)
 #calculate_total_number_electron(nx_number, ny_number, b1, b2, qm)
